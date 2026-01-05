@@ -20,9 +20,6 @@ enum AccountStatus {
 }
 
 
-
-
-
 enum OTPType {
   email_verification
   login_verification
@@ -78,6 +75,15 @@ model Product {
   description String
   price       Float
   quantity    Int
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Category {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  description String?
+  status      String      
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }

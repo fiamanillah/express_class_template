@@ -23,7 +23,8 @@
         "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",
         "docker:up": "docker-compose up -d",
         "docker:down": "docker-compose down",
-        "docker:logs": "docker-compose logs -f"
+        "docker:logs": "docker-compose logs -f",
+        "add:module": "bun scripts/generate-module.ts"
     },
     "dependencies": {
         "@aws-sdk/client-ses": "^3.887.0",
