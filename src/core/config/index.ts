@@ -33,10 +33,6 @@ export const config = {
   database: {
     url: process.env.DATABASE_URL,
     logging: process.env.DB_LOGGING === "true",
-    pool: {
-      min: parseInt(process.env.DB_POOL_MIN || "2"),
-      max: parseInt(process.env.DB_POOL_MAX || "10"),
-    },
   },
   security: {
     cors: {
@@ -58,10 +54,7 @@ export const config = {
   },
   logging: {
     level: process.env.LOG_LEVEL || "info",
-    file: {
-      enabled: process.env.LOG_TO_FILE === "true",
-      path: process.env.LOG_FILE_PATH || "logs/app.log",
-    },
+    path: process.env.LOG_FILE_PATH || "logs/app.log",
   },
 };
 

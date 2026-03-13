@@ -45,7 +45,7 @@ export abstract class BaseController {
     message?: string,
     data?: T[],
   ): Response<PaginatedResponse<T>> | void {
-    if (req.timedout || res.headersSent) {
+    if (req.timedout || res.headersSent || req.abortSignal.aborted) {
       AppLogger.warn(
         `[Blocked] Prevented sending response for ${req.method} ${req.originalUrl} - Request timed out or was closed.`,
       );

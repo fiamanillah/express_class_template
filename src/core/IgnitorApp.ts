@@ -59,6 +59,14 @@ export class IgnitorApp {
         }
       }
 
+      this.app.get("/health", (req, res) => {
+        res.status(200).json({
+          status: "healthy",
+          timestamp: new Date().toISOString(),
+          uptime: process.uptime(),
+        });
+      });
+
       // 4. Global 404 and Error Handlers (MUST be last)
       this.app.use(notFoundHandler());
       this.app.use(errorHandler());

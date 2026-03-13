@@ -3,10 +3,11 @@ import { createLogger, format, transports, Logger } from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 import chalk from "chalk";
 import { format as dateFnsFormat } from "date-fns";
+import config from "../config";
 
 const { combine, timestamp, printf, errors, json } = format;
 
-const LOG_DIR = "logs";
+const LOG_DIR = config.logging.path;
 
 // Console format with colors/emojis
 const consoleFormat = printf(
@@ -31,7 +32,7 @@ const consoleFormat = printf(
 
     const metaString =
       meta && Object.keys(meta).length
-        ? "\n" + chalk.gray(JSON.stringify(meta, null, 2))
+        ? "\n" + chalk.blue(JSON.stringify(meta, null, 3))
         : "";
 
     return `${emoji} ${time} ${lvl}  ${stack || message} ${metaString}`;

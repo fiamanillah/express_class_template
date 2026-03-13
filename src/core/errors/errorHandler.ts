@@ -147,26 +147,27 @@ function handleMulterError(err: MulterError): AppError {
 }
 
 function logError(error: AppError, req: Request): void {
-  const logMeta = {
-    requestId: req.id,
-    method: req.method,
-    path: req.originalUrl || req.path,
-    ip: req.headers["x-forwarded-for"] || req.ip,
-    userAgent: req.get("User-Agent"),
-    statusCode: error.statusCode,
-    code: error.code,
-    isOperational: error.isOperational,
-    ...(error.details ? { details: error.details } : {}),
-  };
+  // Safely extract IP
+  const xff = req.headers["x-forwarded-for"];
+  const ip = Array.isArray(xff) ? xff[0] : xff || req.ip;
+  const method = req.method;
+  const path = req.originalUrl || req.path;
 
+  // Build a beautiful, single-line string
+  let logMessage = `[${method}] ${path} | Status: ${error.statusCode} | Code: ${error.code} | IP: ${ip} | ${error.message}`;
+
+  // Only append details if they exist
+  if (error.details && Object.keys(error.details).length > 0) {
+    logMessage += ` | Details: ${JSON.stringify(error.details)}`;
+  }
+
+  // Log based on severity without passing a giant meta object
   if (error.statusCode >= 500) {
-    AppLogger.error(`❌ ${error.message}`, {
-      ...logMeta,
-      stack: error.stack,
-    });
+    // We still pass the stack trace as meta for 500 errors so you can debug crashes
+    AppLogger.error(`❌ ${logMessage}`, { stack: error.stack });
   } else if (error.statusCode >= 400) {
-    AppLogger.warn(`⚠️ ${error.message}`, logMeta);
+    AppLogger.warn(`⚠️ ${logMessage}`);
   } else {
-    AppLogger.info(`ℹ️ ${error.message}`, logMeta);
+    AppLogger.info(`ℹ️ ${logMessage}`);
   }
 }

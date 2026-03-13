@@ -8,7 +8,7 @@ export function validateRequest(schema: {
   query?: z.ZodSchema;
   params?: z.ZodSchema;
 }) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     try {
       // Validate and store body
       if (schema.body) {
@@ -20,15 +20,10 @@ export function validateRequest(schema: {
       if (schema.query) {
         const parsedQuery = schema.query.parse(req.query);
         req.validatedQuery = parsedQuery;
-
-        // For backward compatibility, try to update req.query safely
         try {
           // Create a new object with parsed values
-          req.validatedQuery = parsedQuery;
-        } catch (error) {
-          // If we can't modify req.query, just use validatedQuery
-          // Controllers can access req.validatedQuery instead
-        }
+          req.query = parsedQuery as any;
+        } catch (error) {}
       }
 
       // Validate params without modifying req.params
@@ -36,7 +31,6 @@ export function validateRequest(schema: {
         const parsedParams = schema.params.parse(req.params);
         req.validatedParams = parsedParams;
 
-        // For backward compatibility, try to update req.params safely
         try {
           Object.assign(req.params, parsedParams);
         } catch (error) {
