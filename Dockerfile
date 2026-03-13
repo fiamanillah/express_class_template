@@ -3,14 +3,12 @@ FROM oven/bun:1.3.10 AS builder
 WORKDIR /app
 
 # Only copy dependency files first for better caching
-COPY package.json bun.lock ./
+COPY package.json bun.lock prisma.config.ts ./
 COPY src/prisma ./src/prisma/
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+RUN bun install --frozen-lockfile --production && bun run db:generate
 
-# Generate Prisma Client
-RUN bun x prisma generate
 
 # Copy source code and build
 COPY src ./src
@@ -29,9 +27,6 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/src/prisma ./src/prisma
-
-# Use a non-root user for security (bun image supports this)
-USER bun
 
 EXPOSE 3030
 
