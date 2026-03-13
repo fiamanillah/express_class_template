@@ -2,6 +2,7 @@
 import { Request, Response } from "express";
 import { HTTPStatusCode } from "@/types/HTTPStatusCode";
 import { ApiResponse, PaginatedResponse } from "@/types/types";
+import { AppLogger } from "./logging/logger";
 
 export abstract class BaseController {
   /**
@@ -13,12 +14,18 @@ export abstract class BaseController {
     message?: string,
     statusCode: HTTPStatusCode = HTTPStatusCode.OK,
     data?: T,
-  ): Response<ApiResponse<T>> {
+  ): Response<ApiResponse<T>> | void {
+    if (req.timedout || res.headersSent) {
+      AppLogger.warn(
+        `[Blocked] Prevented sending response for ${req.method} ${req.originalUrl} - Request timed out or was closed.`,
+      );
+      return;
+    }
+
     const response: ApiResponse<T> = {
       success: true,
       message,
       meta: {
-        // Assuming you fixed the Express Request types in express.d.ts!
         requestId: req.id,
         timestamp: new Date().toISOString(),
       },
@@ -37,7 +44,14 @@ export abstract class BaseController {
     pagination: PaginatedResponse<T>["meta"]["pagination"],
     message?: string,
     data?: T[],
-  ): Response<PaginatedResponse<T>> {
+  ): Response<PaginatedResponse<T>> | void {
+    if (req.timedout || res.headersSent) {
+      AppLogger.warn(
+        `[Blocked] Prevented sending response for ${req.method} ${req.originalUrl} - Request timed out or was closed.`,
+      );
+      return;
+    }
+
     const response: PaginatedResponse<T> = {
       success: true,
       message,
@@ -60,7 +74,7 @@ export abstract class BaseController {
     res: Response,
     data: T,
     message: string = "Resource created successfully",
-  ): Response<ApiResponse<T>> {
+  ): Response<ApiResponse<T>> | void {
     return this.sendResponse(req, res, message, HTTPStatusCode.CREATED, data);
   }
 
@@ -72,18 +86,26 @@ export abstract class BaseController {
   }
 
   /**
-   * Standardize extracting pagination parameters from query string
+   * Standardize extracting pagination parameters from query string.
+   * @param req The Express Request object
+   * @param maxLimit The maximum allowed limit (defaults to 100 to prevent DDoS via massive DB queries)
    */
-  protected extractPaginationParams(req: Request): {
+  protected extractPaginationParams(
+    req: Request,
+    maxLimit: number = 100,
+  ): {
     page: number;
     limit: number;
     offset: number;
   } {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
+
+    // Use the provided maxLimit parameter instead of a hardcoded 100
     const limit = Math.min(
-      100,
+      maxLimit,
       Math.max(1, parseInt(req.query.limit as string) || 10),
     );
+
     const offset = (page - 1) * limit;
 
     return { page, limit, offset };

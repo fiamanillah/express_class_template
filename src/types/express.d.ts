@@ -1,15 +1,22 @@
-import { User } from "@/generated/prisma/client";
+// src/types/express.d.ts
+import { Request } from "express";
 
+declare module "express-serve-static-core" {
+  export interface Request {
+    id: string;
+    abortSignal: AbortSignal;
+    validatedBody?: any;
+    validatedQuery?: any;
+    validatedParams?: any;
+  }
+}
+
+// In express.d.ts
 declare global {
   namespace Express {
     interface Request {
       id: string;
-      userId?: string;
-      user?: User;
-      validatedBody?: any;
-      validatedParams?: any;
-      rawBody?: Buffer;
+      timedout?: boolean;
     }
   }
 }
-export {};

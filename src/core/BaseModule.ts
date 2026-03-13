@@ -6,7 +6,6 @@ import { AppLogger } from "./logging/logger";
 
 // Registry interface for localized Dependency Injection
 export interface ModuleDependencies {
-  repositories: Map<string, any>;
   services: Map<string, any>;
   controllers: Map<string, any>;
 }
@@ -21,7 +20,6 @@ export abstract class BaseModule implements IgnitorModule {
 
   // Internal DI container for the module
   protected container: ModuleDependencies = {
-    repositories: new Map(),
     services: new Map(),
     controllers: new Map(),
   };
@@ -42,19 +40,16 @@ export abstract class BaseModule implements IgnitorModule {
     // 1. Pre-init hooks
     await this.onBeforeInit();
 
-    // 2. Data Access Layer (Innermost)
-    await this.setupRepositories();
-
-    // 3. Business Logic / Use Cases Layer
+    // 2. Business Logic / Use Cases Layer
     await this.setupUseCases();
 
-    // 4. Interface Adapters Layer (Controllers)
+    // 3. Interface Adapters Layer (Controllers)
     await this.setupControllers();
 
-    // 5. Delivery Layer (Routes)
+    // 4. Delivery Layer (Routes)
     await this.setupRoutes();
 
-    // 6. Post-init hooks
+    // 5. Post-init hooks
     await this.onAfterInit();
 
     AppLogger.info(`Module ${this.name} initialized successfully`);
@@ -65,36 +60,23 @@ export abstract class BaseModule implements IgnitorModule {
   // ==========================================
 
   /**
-   * Layer 1: Setup data access Repositories
-   */
-  protected abstract setupRepositories(): Promise<void>;
-
-  /**
-   * Layer 2: Setup business logic Services / Use Cases
+   * Layer 1: Setup business logic Services / Use Cases
    */
   protected abstract setupUseCases(): Promise<void>;
 
   /**
-   * Layer 3: Setup Presentation Controllers
+   * Layer 2: Setup Presentation Controllers
    */
   protected abstract setupControllers(): Promise<void>;
 
   /**
-   * Layer 4: Wire HTTP routes to controllers
+   * Layer 3: Wire HTTP routes to controllers
    */
   protected abstract setupRoutes(): Promise<void>;
 
   // ==========================================
   // Dependency Injection Helpers
   // ==========================================
-
-  protected registerRepository(key: string, instance: any): void {
-    this.container.repositories.set(key, instance);
-  }
-
-  protected getRepository<T>(key: string): T {
-    return this.container.repositories.get(key) as T;
-  }
 
   protected registerService(key: string, instance: any): void {
     this.container.services.set(key, instance);
@@ -126,7 +108,6 @@ export abstract class BaseModule implements IgnitorModule {
 
   protected async cleanup(): Promise<void> {
     // Clear DI registries to prevent memory leaks during shutdown
-    this.container.repositories.clear();
     this.container.services.clear();
     this.container.controllers.clear();
   }
