@@ -1,106 +1,152 @@
 // src/core/BaseModule.ts
-import { Router } from 'express';
-import { Context } from './Context';
-import { IgnitorModule } from './IgnitorModule';
-import { AppLogger } from './logging/logger';
+import { Router } from "express";
+import { Context } from "./Context";
+import { IgnitorModule } from "./IgnitorModule";
+import { AppLogger } from "./logging/logger";
+
+// Registry interface for localized Dependency Injection
+export interface ModuleDependencies {
+  repositories: Map<string, any>;
+  services: Map<string, any>;
+  controllers: Map<string, any>;
+}
 
 export abstract class BaseModule implements IgnitorModule {
-    public abstract readonly name: string;
-    public abstract readonly version: string;
-    public abstract readonly dependencies?: string[];
+  public abstract readonly name: string;
+  public abstract readonly version: string;
+  public abstract readonly dependencies?: string[];
 
-    protected router: Router;
-    protected context!: Context;
+  protected router: Router;
+  protected context!: Context;
 
-    constructor() {
-        this.router = Router();
-    }
+  // Internal DI container for the module
+  protected container: ModuleDependencies = {
+    repositories: new Map(),
+    services: new Map(),
+    controllers: new Map(),
+  };
 
-    /**
-     * Initialize the module
-     * This method is called during application startup
-     */
-    public async initialize(context: Context): Promise<void> {
-        this.context = context;
+  constructor() {
+    this.router = Router();
+  }
 
-        AppLogger.info(`Initializing module: ${this.name} v${this.version}`);
+  /**
+   * Initialize the module
+   * Follows Clean Architecture Dependency Rule: from innermost layer to outermost layer
+   */
+  public async initialize(context: Context): Promise<void> {
+    this.context = context;
 
-        // Call the setup methods in order
-        await this.onBeforeInit();
-        await this.setupServices();
-        await this.setupRoutes();
-        await this.onAfterInit();
+    AppLogger.info(`Initializing module: ${this.name} v${this.version}`);
 
-        AppLogger.info(`Module ${this.name} initialized successfully`);
-    }
+    // 1. Pre-init hooks
+    await this.onBeforeInit();
 
-    /**
-     * Setup module routes
-     * Override this method to define your routes
-     */
-    protected abstract setupRoutes(): Promise<void>;
+    // 2. Data Access Layer (Innermost)
+    await this.setupRepositories();
 
-    /**
-     * Setup module services
-     * Override this method to initialize services, repositories, etc.
-     */
-    protected abstract setupServices(): Promise<void>;
+    // 3. Business Logic / Use Cases Layer
+    await this.setupUseCases();
 
-    /**
-     * Hook called before module initialization
-     * Override for custom pre-initialization logic
-     */
-    protected async onBeforeInit(): Promise<void> {
-        // Default implementation - can be overridden
-    }
+    // 4. Interface Adapters Layer (Controllers)
+    await this.setupControllers();
 
-    /**
-     * Hook called after module initialization
-     * Override for custom post-initialization logic
-     */
-    protected async onAfterInit(): Promise<void> {
-        // Default implementation - can be overridden
-    }
+    // 5. Delivery Layer (Routes)
+    await this.setupRoutes();
 
-    /**
-     * Cleanup resources when shutting down
-     * Override this method to cleanup resources
-     */
-    public async onShutdown(): Promise<void> {
-        AppLogger.info(`Shutting down module: ${this.name}`);
-        await this.cleanup();
-    }
+    // 6. Post-init hooks
+    await this.onAfterInit();
 
-    /**
-     * Override this method to implement custom cleanup logic
-     */
-    protected async cleanup(): Promise<void> {
-        // Default implementation - can be overridden
-    }
+    AppLogger.info(`Module ${this.name} initialized successfully`);
+  }
 
-    /**
-     * Get the router instance for this module
-     */
-    public getRouter(): Router {
-        return this.router;
-    }
+  // ==========================================
+  // Abstract Methods (To be implemented by child modules)
+  // ==========================================
 
-    /**
-     * Get module metadata
-     */
-    public getMetadata() {
-        return {
-            name: this.name,
-            version: this.version,
-            dependencies: this.dependencies || [],
-        };
-    }
+  /**
+   * Layer 1: Setup data access Repositories
+   */
+  protected abstract setupRepositories(): Promise<void>;
 
-    /**
-     * Health check for the module
-     * Override this method to implement module-specific health checks
-     */
-    public async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details?: any }> {
-        return { status: 'healthy' };
-    }
+  /**
+   * Layer 2: Setup business logic Services / Use Cases
+   */
+  protected abstract setupUseCases(): Promise<void>;
+
+  /**
+   * Layer 3: Setup Presentation Controllers
+   */
+  protected abstract setupControllers(): Promise<void>;
+
+  /**
+   * Layer 4: Wire HTTP routes to controllers
+   */
+  protected abstract setupRoutes(): Promise<void>;
+
+  // ==========================================
+  // Dependency Injection Helpers
+  // ==========================================
+
+  protected registerRepository(key: string, instance: any): void {
+    this.container.repositories.set(key, instance);
+  }
+
+  protected getRepository<T>(key: string): T {
+    return this.container.repositories.get(key) as T;
+  }
+
+  protected registerService(key: string, instance: any): void {
+    this.container.services.set(key, instance);
+  }
+
+  protected getService<T>(key: string): T {
+    return this.container.services.get(key) as T;
+  }
+
+  protected registerController(key: string, instance: any): void {
+    this.container.controllers.set(key, instance);
+  }
+
+  protected getController<T>(key: string): T {
+    return this.container.controllers.get(key) as T;
+  }
+
+  // ==========================================
+  // Lifecycle Hooks & Utilities
+  // ==========================================
+
+  protected async onBeforeInit(): Promise<void> {}
+  protected async onAfterInit(): Promise<void> {}
+
+  public async onShutdown(): Promise<void> {
+    AppLogger.info(`Shutting down module: ${this.name}`);
+    await this.cleanup();
+  }
+
+  protected async cleanup(): Promise<void> {
+    // Clear DI registries to prevent memory leaks during shutdown
+    this.container.repositories.clear();
+    this.container.services.clear();
+    this.container.controllers.clear();
+  }
+
+  public getRouter(): Router {
+    return this.router;
+  }
+
+  public getMetadata() {
+    return {
+      name: this.name,
+      version: this.version,
+      dependencies: this.dependencies || [],
+    };
+  }
+
+  public async healthCheck(): Promise<{
+    status: "healthy" | "unhealthy";
+    details?: any;
+  }> {
+    return { status: "healthy" };
+  }
 }
