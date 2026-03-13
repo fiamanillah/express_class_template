@@ -1,50 +1,39 @@
-# Stage 1: Build the application
-FROM oven/bun:1 AS builder
-
+# Stage 1: Install dependencies and build
+FROM oven/bun:1.3.10 AS builder
 WORKDIR /app
 
-# --------------------------------------------------------
-# FIX: Install OpenSSL in BUILDER stage so Prisma can detect the correct target
-# --------------------------------------------------------
-RUN apt-get update -y && apt-get install -y openssl ca-certificates
-
-# Copy package definition files
+# Only copy dependency files first for better caching
 COPY package.json bun.lock ./
-COPY prisma ./prisma/
+COPY src/prisma ./src/prisma/
 
 # Install dependencies
 RUN bun install --frozen-lockfile
 
 # Generate Prisma Client
-# (We removed the ENV variable; Prisma will now auto-detect debian-openssl-3.0.x because OpenSSL is installed)
 RUN bun x prisma generate
 
-# Copy the rest of the source code
-COPY . .
+# Copy source code and build
+COPY src ./src
+COPY tsconfig.json ./
 
-# Build the TypeScript code
 RUN bun run build
 
-# Stage 2: Production Runner
-FROM oven/bun:1-slim AS runner
-
-# Install OpenSSL (Required for Prisma at runtime)
-RUN apt-get update -y && apt-get install -y openssl ca-certificates
-
+# Stage 2: Production image
+FROM oven/bun:1.3.10-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy necessary files from builder
+# Only copy production build artifacts
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/src/prisma ./src/prisma
 
-# Copy static assets
-COPY --from=builder /app/email-templates ./email-templates
-# COPY --from=builder /app/certificate-template ./certificate-template
+# Use a non-root user for security (bun image supports this)
+USER bun
 
 EXPOSE 3030
 
+# Use exec form for CMD
 CMD ["bun", "dist/index.js"]

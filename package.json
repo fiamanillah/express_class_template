@@ -27,12 +27,8 @@
         "add:module": "bun scripts/generate-module.ts"
     },
     "dependencies": {
-        "@aws-sdk/client-ses": "^3.887.0",
-        "@aws-sdk/lib-storage": "^3.891.0",
-        "@prisma/adapter-pg": "^7.2.0",
+        "@prisma/adapter-pg": "^7.5.0",
         "@prisma/client": "^7.2.0",
-        "@types/pg": "^8.16.0",
-        "aws-sdk": "^2.1692.0",
         "axios": "^1.12.2",
         "bcrypt": "^6.0.0",
         "chalk": "^5.6.0",
@@ -48,17 +44,15 @@
         "jsonwebtoken": "^9.0.2",
         "lodash": "^4.17.21",
         "multer": "^2.0.2",
-        "node-cron": "^4.2.1",
         "pg": "^8.16.3",
         "prisma": "^7.2.0",
-        "slugify": "^1.6.6",
         "uuid": "^11.1.0",
         "winston": "^3.17.0",
         "winston-daily-rotate-file": "^5.0.0",
         "zod": "^4.1.1"
     },
     "devDependencies": {
-        "@types/aws-sdk": "^2.7.4",
+        "@types/pg": "^8.16.0",
         "@types/bcrypt": "^6.0.0",
         "@types/bun": "latest",
         "@types/compression": "^1.8.1",
@@ -69,8 +63,7 @@
         "@types/jsonwebtoken": "^9.0.10",
         "@types/lodash": "^4.17.20",
         "@types/multer": "^2.0.0",
-        "@types/node": "^25.0.3",
-        "@types/node-cron": "^3.0.11"
+        "@types/node": "^25.0.3"
     },
     "peerDependencies": {
         "typescript": "^5"
