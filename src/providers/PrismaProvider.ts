@@ -1,13 +1,13 @@
 import { InfrastructureProvider } from "@/core/InfrastructureProvider";
-import { PrismaClient } from "@/generated/prisma/client";
 import { errorMapperRegistry } from "@/core/errors/ErrorMapperRegistry";
 import { AppError, ConflictError, NotFoundError } from "@/core/errors/AppError";
 import { HTTPStatusCode } from "@/types/HTTPStatusCode";
-import { PrismaClientUnknownRequestError } from "@/src/generated/prisma/internal/prismaNamespace";
 import {
   PrismaClientInitializationError,
   PrismaClientKnownRequestError,
+  PrismaClientUnknownRequestError,
 } from "@prisma/client/runtime/client";
+import { PrismaClient } from "@/prisma/generated/client";
 
 export class PrismaProvider implements InfrastructureProvider<PrismaClient> {
   public name = "Prisma Database";
